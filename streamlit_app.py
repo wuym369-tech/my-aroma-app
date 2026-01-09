@@ -833,11 +833,26 @@ elif st.session_state.step == 2:
                 st.session_state.mbti_choice = result
                 st.session_state.taking_mbti_test = False
                 st.session_state.mbti_answers = [None] * 8
-                st.session_state.step = 3
+                st.session_state.show_mbti_result = True  # 顯示結果頁面
                 st.rerun()
 
         if not all_answered:
             st.warning("請完成所有題目後再繼續")
+
+    # 顯示 MBTI 測試結果
+    elif st.session_state.get("show_mbti_result", False):
+        mbti_result = st.session_state.mbti_choice
+        personality = mbti_personality.get(mbti_result, "獨特個性")
+
+        st.markdown("### 🎉 測試完成！")
+        st.success(f"**您的 MBTI 人格類型是：{mbti_result}**")
+        st.info(f"💡 **個性特質**：{personality}")
+
+        st.markdown("---")
+        if st.button("繼續下一步 ➔", use_container_width=True):
+            st.session_state.show_mbti_result = False
+            st.session_state.step = 3
+            st.rerun()
 
     else:
         # 正常的 MBTI 選擇介面
@@ -846,6 +861,11 @@ elif st.session_state.step == 2:
             list(mbti_db.keys()),
             key="step2_mbti"
         )
+
+        # 顯示選擇的 MBTI 個性描述
+        if st.session_state.mbti_choice:
+            personality = mbti_personality.get(st.session_state.mbti_choice, "獨特個性")
+            st.info(f"💡 **個性特質**：{personality}")
 
         # 新增：不知道 MBTI 的按鈕
         if st.button("🤔 我不知道我的 MBTI，進行測試"):
@@ -1086,10 +1106,12 @@ elif st.session_state.step == 5:
         <div style="display:flex; justify-content:center; gap:12px; margin:15px 0; flex-wrap:wrap;">
             <span style="background:#E3F2FD; padding:8px 16px; border-radius:12px; font-size:15px; font-weight:bold;">🌠 {z_name}</span>
             <span style="background:#F3E5F5; padding:8px 16px; border-radius:12px; font-size:15px; font-weight:bold;">🏮 {c_zodiac}年（{c_element}）</span>
+            <span style="background:#FFF3E0; padding:8px 16px; border-radius:12px; font-size:15px; font-weight:bold;">🧠 {mbti_choice}</span>
             <span style="background:#E8F5E9; padding:8px 16px; border-radius:12px; font-size:15px; font-weight:bold;">🔢 {l_num} 號人</span>
         </div>
         <div style="font-size: 13px; color: #4A5568; line-height: 1.7; background: #FAFAFA; padding: 15px; border-radius: 12px; margin-bottom: 20px; border: 0.5px solid #EDF2F7;">
             <p style="margin:0 0 10px 0;"><b>✨ 星座特質：</b>{zodiac_db.get(z_name, "能量引導者")}</p>
+            <p style="margin:0 0 10px 0;"><b>🧠 MBTI 人格：</b>{mbti_personality.get(mbti_choice, "獨特個性")}</p>
             <p style="margin:0;"><b>☯️ 五行能量：</b>{element_traits.get(c_element, "穩定底蘊")}</p>
         </div>
         <div style="background:#FFF9F0; padding:15px; border-radius:10px; border-left: 5px solid #D4AF37;">
