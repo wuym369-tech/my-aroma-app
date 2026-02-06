@@ -1001,7 +1001,13 @@ if st.session_state.step == 1:
     st.subheader("Step 1: 🌌 命运基盘能量")
     st.info("AI 将根据您的出生时刻，定位星盘坐标、生肖五行与八字能量。")
 
-    st.session_state.birthday = st.date_input("📅 您的出生年月日", value=date(2000, 1, 1), key="step1_birthday")
+    st.session_state.birthday = st.date_input(
+        "📅 您的出生年月日",
+        value=date(2000, 1, 1),
+        min_value=date(1926, 1, 1),
+        max_value=date(2026, 12, 31),
+        key="step1_birthday"
+    )
 
     # 时辰选择
     st.markdown("**🕐 您的出生时辰**")
