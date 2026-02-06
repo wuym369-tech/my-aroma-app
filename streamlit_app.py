@@ -7,6 +7,147 @@ import random
 # 1. 页面配置 (必须放在最顶端)
 st.set_page_config(page_title="Aroma's Secret Lab", layout="centered")
 
+# 自定义 CSS 样式
+st.markdown("""
+<style>
+/* 白色奶油风背景 - 清爽高级感 */
+body, .stApp {
+    background: linear-gradient(180deg, #f5f0ff 0%, #ede7f6 40%, #faf8ff 80%, #ffffff 100%) !important;
+    background-color: #ffffff !important;
+}
+
+/* 精品白色按键 - 雾化透明感 */
+div.stButton > button, .stButton > button {
+    background: rgba(255, 255, 255, 0.85) !important;
+    color: #3d3d3d !important;
+    border: 1px solid rgba(201, 169, 110, 0.3) !important;
+    border-radius: 16px !important;
+    padding: 16px 32px !important;
+    font-size: 15px !important;
+    font-weight: 600 !important;
+    letter-spacing: 1.5px !important;
+    text-transform: uppercase !important;
+    backdrop-filter: blur(15px) !important;
+    -webkit-backdrop-filter: blur(15px) !important;
+    box-shadow: 
+        0 4px 20px rgba(0,0,0,0.08) !important,
+        0 0 0 1px rgba(255,255,255,0.5) inset !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+div.stButton > button:hover, .stButton > button:hover {
+    background: rgba(255, 255, 255, 0.95) !important;
+    transform: translateY(-3px) !important;
+    box-shadow: 
+        0 12px 40px rgba(201, 169, 110, 0.2) !important,
+        0 0 30px rgba(201, 169, 110, 0.1) !important;
+    border-color: rgba(201, 169, 110, 0.5) !important;
+}
+
+div.stButton > button:active {
+    transform: translateY(-1px) !important;
+    background: rgba(250, 248, 245, 0.98) !important;
+    box-shadow: 0 6px 25px rgba(201, 169, 110, 0.15) !important;
+}
+
+/* 雾化透明卡片 */
+div[data-testid="stMetric"], div[data-testid="stInfo"], div[data-testid="stSuccess"], .stMetric {
+    background: rgba(245, 240, 255, 0.75) !important;
+    backdrop-filter: blur(20px) !important;
+    -webkit-backdrop-filter: blur(20px) !important;
+    border-radius: 20px !important;
+    border: 1px solid rgba(201, 169, 110, 0.15) !important;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.04) !important;
+}
+
+/* 雾化单选按键 - 重点 */
+div[role="radiogroup"] > div {
+    gap: 12px !important;
+}
+
+div[role="radiogroup"] label {
+    border-radius: 16px !important;
+    padding: 18px 24px !important;
+    background: rgba(255, 255, 255, 0.6) !important;
+    backdrop-filter: blur(25px) !important;
+    -webkit-backdrop-filter: blur(25px) !important;
+    margin: 8px 0 !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    border: 1px solid rgba(201, 169, 110, 0.2) !important;
+    box-shadow: 
+        0 4px 15px rgba(0,0,0,0.03) !important,
+        inset 0 0 0 1px rgba(255,255,255,0.3) !important;
+}
+
+div[role="radiogroup"] label:hover {
+    background: rgba(255, 255, 255, 0.85) !important;
+    border-color: rgba(201, 169, 110, 0.4) !important;
+    box-shadow: 
+        0 8px 30px rgba(201, 169, 110, 0.15) !important,
+        inset 0 0 0 1px rgba(255,255,255,0.5) !important;
+    transform: translateY(-2px) !important;
+}
+
+div[role="radiogroup"] label[data-checked="true"] {
+    background: rgba(255, 255, 255, 0.92) !important;
+    border-color: rgba(201, 169, 110, 0.6) !important;
+    box-shadow: 
+        0 12px 40px rgba(201, 169, 110, 0.2) !important,
+        inset 0 0 0 1px rgba(201, 169, 110, 0.1) !important;
+}
+
+/* 输入框美化 */
+input[type="text"], .stTextInput input {
+    border-radius: 14px !important;
+    border: 1px solid rgba(201, 169, 110, 0.2) !important;
+    background: rgba(255, 255, 255, 0.8) !important;
+    backdrop-filter: blur(10px) !important;
+    padding: 14px 18px !important;
+    transition: all 0.3s ease !important;
+}
+
+input[type="text"]:focus, .stTextInput input:focus {
+    border-color: rgba(201, 169, 110, 0.5) !important;
+    box-shadow: 0 0 0 4px rgba(201, 169, 110, 0.1) !important;
+    background: rgba(255, 255, 255, 0.95) !important;
+}
+
+/* 选择框美化 */
+.stSelectbox div[data-baseweb="select"] {
+    border-radius: 14px !important;
+    background: rgba(255, 255, 255, 0.8) !important;
+    backdrop-filter: blur(10px) !important;
+    border: 1px solid rgba(201, 169, 110, 0.2) !important;
+}
+
+/* 进度条 - 金色渐层 */
+div[role="progressbar"] div {
+    background: linear-gradient(90deg, #c9a96e 0%, #e8d5b7 50%, #d4af37 100%) !important;
+    border-radius: 10px !important;
+    box-shadow: 0 2px 10px rgba(201, 169, 110, 0.3) !important;
+}
+
+/* 标题美化 */
+h1, h2, h3, h4, h5, h6 {
+    font-weight: 600 !important;
+    color: #3d3d3d !important;
+    letter-spacing: 0.5px !important;
+}
+
+/* 结果卡片 */
+.result-card {
+    background: rgba(255, 255, 255, 0.75) !important;
+    backdrop-filter: blur(25px) !important;
+    -webkit-backdrop-filter: blur(25px) !important;
+    border-radius: 24px !important;
+    border: 1px solid rgba(201, 169, 110, 0.15) !important;
+    box-shadow: 
+        0 20px 60px rgba(0,0,0,0.05) !important,
+        inset 0 0 0 1px rgba(255,255,255,0.5) !important;
+}
+</style>
+""", unsafe_allow_html=True)
+
 # ==========================================
 # 数据库 A：78 种香味与感性描述
 # ==========================================
