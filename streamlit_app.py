@@ -1,151 +1,276 @@
 import streamlit as st
+import streamlit.components.v1 as components
 from datetime import date
 from collections import Counter
 import time
 import random
+import math
+
+# ── 開發者模式後門 ─────────────────────────────────
+# 改成 True → Step 3 顯示「快速測試」按鈕（自動選第一個選項）
+# 上線前改回 False 即可隱藏
+DEV_MODE = True
+# ──────────────────────────────────────────────────
 
 # 1. 页面配置 (必须放在最顶端)
 st.set_page_config(page_title="Aroma's Secret Lab", layout="centered")
 
-# 自定义 CSS 样式
+# 自定义 CSS 样式 - 高级奢华风
 st.markdown("""
 <style>
-/* 白色奶油风背景 - 清爽高级感 */
+/* ===== 高级奢华背景 ===== */
 body, .stApp {
-    background: linear-gradient(180deg, #f5f0ff 0%, #ede7f6 40%, #faf8ff 80%, #ffffff 100%) !important;
+    background: linear-gradient(135deg, #faf8ff 0%, #f3f0ff 25%, #ede7f6 50%, #f5f0ff 75%, #ffffff 100%) !important;
     background-color: #ffffff !important;
+    font-family: 'Noto Serif TC', 'Songti TC', serif !important;
 }
 
-/* 精品白色按键 - 雾化透明感 */
-div.stButton > button, .stButton > button {
-    background: rgba(255, 255, 255, 0.85) !important;
-    color: #3d3d3d !important;
-    border: 1px solid rgba(201, 169, 110, 0.3) !important;
-    border-radius: 16px !important;
-    padding: 16px 32px !important;
-    font-size: 15px !important;
+/* ===== 高级标题 ===== */
+h1, h2, h3, h4, h5, h6 {
+    font-family: 'Noto Serif TC', 'Songti TC', serif !important;
     font-weight: 600 !important;
-    letter-spacing: 1.5px !important;
+    color: #1a1a2e !important;
+    letter-spacing: 1px !important;
+}
+
+h1 { font-size: 2rem !important; }
+h2 { font-size: 1.6rem !important; }
+h3 { font-size: 1.3rem !important; }
+
+/* ===== 奢华按钮 ===== */
+div.stButton > button, .stButton > button {
+    background: linear-gradient(135deg, #ffffff 0%, #faf8ff 50%, #ffffff 100%) !important;
+    color: #1a1a2e !important;
+    border: 1px solid rgba(196, 164, 132, 0.4) !important;
+    border-radius: 20px !important;
+    padding: 18px 36px !important;
+    font-size: 14px !important;
+    font-weight: 600 !important;
+    letter-spacing: 2px !important;
     text-transform: uppercase !important;
-    backdrop-filter: blur(15px) !important;
-    -webkit-backdrop-filter: blur(15px) !important;
+    backdrop-filter: blur(20px) !important;
+    -webkit-backdrop-filter: blur(20px) !important;
     box-shadow: 
-        0 4px 20px rgba(0,0,0,0.08) !important,
-        0 0 0 1px rgba(255,255,255,0.5) inset !important;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        0 4px 30px rgba(196, 164, 132, 0.15) !important,
+        0 1px 0 1px rgba(255,255,255,0.8) inset !important,
+        0 -1px 0 1px rgba(0,0,0,0.05) inset !important;
+    transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) !important;
+    position: relative;
+    overflow: hidden;
+}
+
+div.stButton > button::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent);
+    transition: left 0.5s ease !important;
+}
+
+div.stButton > button:hover::before {
+    left: 100%;
 }
 
 div.stButton > button:hover, .stButton > button:hover {
-    background: rgba(255, 255, 255, 0.95) !important;
-    transform: translateY(-3px) !important;
+    background: linear-gradient(135deg, #faf8ff 0%, #fff 50%, #f5f0ff 100%) !important;
+    transform: translateY(-4px) !important;
     box-shadow: 
-        0 12px 40px rgba(201, 169, 110, 0.2) !important,
-        0 0 30px rgba(201, 169, 110, 0.1) !important;
-    border-color: rgba(201, 169, 110, 0.5) !important;
+        0 15px 50px rgba(196, 164, 132, 0.25) !important,
+        0 1px 0 1px rgba(255,255,255,0.9) inset !important,
+        0 -1px 0 1px rgba(0,0,0,0.03) inset !important;
+    border-color: rgba(196, 164, 132, 0.6) !important;
 }
 
 div.stButton > button:active {
     transform: translateY(-1px) !important;
-    background: rgba(250, 248, 245, 0.98) !important;
-    box-shadow: 0 6px 25px rgba(201, 169, 110, 0.15) !important;
-}
-
-/* 雾化透明卡片 */
-div[data-testid="stMetric"], div[data-testid="stInfo"], div[data-testid="stSuccess"], .stMetric {
-    background: rgba(245, 240, 255, 0.75) !important;
-    backdrop-filter: blur(20px) !important;
-    -webkit-backdrop-filter: blur(20px) !important;
-    border-radius: 20px !important;
-    border: 1px solid rgba(201, 169, 110, 0.15) !important;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.04) !important;
-}
-
-/* 雾化单选按键 - 重点 */
-div[role="radiogroup"] > div {
-    gap: 12px !important;
-}
-
-div[role="radiogroup"] label {
-    border-radius: 16px !important;
-    padding: 18px 24px !important;
-    background: rgba(255, 255, 255, 0.6) !important;
-    backdrop-filter: blur(25px) !important;
-    -webkit-backdrop-filter: blur(25px) !important;
-    margin: 8px 0 !important;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
-    border: 1px solid rgba(201, 169, 110, 0.2) !important;
     box-shadow: 
-        0 4px 15px rgba(0,0,0,0.03) !important,
-        inset 0 0 0 1px rgba(255,255,255,0.3) !important;
+        0 6px 25px rgba(196, 164, 132, 0.2) !important;
 }
 
-div[role="radiogroup"] label:hover {
-    background: rgba(255, 255, 255, 0.85) !important;
-    border-color: rgba(201, 169, 110, 0.4) !important;
-    box-shadow: 
-        0 8px 30px rgba(201, 169, 110, 0.15) !important,
-        inset 0 0 0 1px rgba(255,255,255,0.5) !important;
-    transform: translateY(-2px) !important;
-}
-
-div[role="radiogroup"] label[data-checked="true"] {
-    background: rgba(255, 255, 255, 0.92) !important;
-    border-color: rgba(201, 169, 110, 0.6) !important;
-    box-shadow: 
-        0 12px 40px rgba(201, 169, 110, 0.2) !important,
-        inset 0 0 0 1px rgba(201, 169, 110, 0.1) !important;
-}
-
-/* 输入框美化 */
-input[type="text"], .stTextInput input {
-    border-radius: 14px !important;
-    border: 1px solid rgba(201, 169, 110, 0.2) !important;
-    background: rgba(255, 255, 255, 0.8) !important;
-    backdrop-filter: blur(10px) !important;
-    padding: 14px 18px !important;
-    transition: all 0.3s ease !important;
-}
-
-input[type="text"]:focus, .stTextInput input:focus {
-    border-color: rgba(201, 169, 110, 0.5) !important;
-    box-shadow: 0 0 0 4px rgba(201, 169, 110, 0.1) !important;
-    background: rgba(255, 255, 255, 0.95) !important;
-}
-
-/* 选择框美化 */
-.stSelectbox div[data-baseweb="select"] {
-    border-radius: 14px !important;
-    background: rgba(255, 255, 255, 0.8) !important;
-    backdrop-filter: blur(10px) !important;
-    border: 1px solid rgba(201, 169, 110, 0.2) !important;
-}
-
-/* 进度条 - 金色渐层 */
-div[role="progressbar"] div {
-    background: linear-gradient(90deg, #c9a96e 0%, #e8d5b7 50%, #d4af37 100%) !important;
-    border-radius: 10px !important;
-    box-shadow: 0 2px 10px rgba(201, 169, 110, 0.3) !important;
-}
-
-/* 标题美化 */
-h1, h2, h3, h4, h5, h6 {
-    font-weight: 600 !important;
-    color: #3d3d3d !important;
-    letter-spacing: 0.5px !important;
-}
-
-/* 结果卡片 */
-.result-card {
-    background: rgba(255, 255, 255, 0.75) !important;
+/* ===== 奢华卡片 ===== */
+div[data-testid="stMetric"], div[data-testid="stInfo"], div[data-testid="stSuccess"], div[data-testid="stWarning"], 
+div[data-testid="stError"], div.stMetric, .stAlert {
+    background: linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(250,248,245,0.85) 100%) !important;
     backdrop-filter: blur(25px) !important;
     -webkit-backdrop-filter: blur(25px) !important;
     border-radius: 24px !important;
-    border: 1px solid rgba(201, 169, 110, 0.15) !important;
+    border: 1px solid rgba(196, 164, 132, 0.2) !important;
     box-shadow: 
-        0 20px 60px rgba(0,0,0,0.05) !important,
-        inset 0 0 0 1px rgba(255,255,255,0.5) !important;
+        0 10px 40px rgba(0,0,0,0.06) !important,
+        0 1px 0 1px rgba(255,255,255,0.8) inset !important,
+        0 -1px 0 1px rgba(0,0,0,0.02) inset !important;
+}
+
+/* ===== 高级单选按钮 ===== */
+div[role="radiogroup"] > div {
+    gap: 14px !important;
+}
+
+div[role="radiogroup"] label {
+    border-radius: 18px !important;
+    padding: 20px 28px !important;
+    background: linear-gradient(135deg, rgba(255,255,255,0.85) 0%, rgba(250,248,245,0.8) 100%) !important;
+    backdrop-filter: blur(30px) !important;
+    -webkit-backdrop-filter: blur(30px) !important;
+    margin: 10px 0 !important;
+    transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) !important;
+    border: 1px solid rgba(196, 164, 132, 0.25) !important;
+    box-shadow: 
+        0 4px 20px rgba(0,0,0,0.04) !important,
+        0 1px 0 1px rgba(255,255,255,0.9) inset !important;
+}
+
+div[role="radiogroup"] label:hover {
+    background: linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.9) 100%) !important;
+    border-color: rgba(196, 164, 132, 0.5) !important;
+    box-shadow: 
+        0 12px 40px rgba(196, 164, 132, 0.18) !important,
+        0 1px 0 1px rgba(255,255,255,0.95) inset !important;
+    transform: translateY(-3px) !important;
+}
+
+div[role="radiogroup"] label[data-checked="true"] {
+    background: linear-gradient(135deg, rgba(196, 164, 132, 0.15) 0%, rgba(212, 170, 125, 0.1) 100%) !important;
+    border-color: rgba(196, 164, 132, 0.6) !important;
+    box-shadow: 
+        0 15px 50px rgba(196, 164, 132, 0.22) !important,
+        inset 0 0 0 1px rgba(196, 164, 132, 0.1) !important;
+}
+
+/* ===== 高级输入框 ===== */
+input[type="text"], .stTextInput input, input[type="number"], input[type="email"], input[type="password"] {
+    border-radius: 16px !important;
+    border: 1px solid rgba(196, 164, 132, 0.3) !important;
+    background: linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(250,248,245,0.85) 100%) !important;
+    backdrop-filter: blur(15px) !important;
+    padding: 16px 20px !important;
+    font-size: 15px !important;
+    transition: all 0.3s ease !important;
+}
+
+input[type="text"]:focus, .stTextInput input:focus, input[type="number"]:focus {
+    border-color: rgba(196, 164, 132, 0.6) !important;
+    box-shadow: 
+        0 0 0 4px rgba(196, 164, 132, 0.12) !important,
+        0 8px 30px rgba(196, 164, 132, 0.1) !important;
+    background: rgba(255,255,255,0.98) !important;
+}
+
+/* ===== 高级选择框 ===== */
+.stSelectbox div[data-baseweb="select"] {
+    border-radius: 16px !important;
+    background: linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(250,248,245,0.85) 100%) !important;
+    backdrop-filter: blur(15px) !important;
+    border: 1px solid rgba(196, 164, 132, 0.3) !important;
+}
+
+/* ===== 奢华进度条 ===== */
+div[role="progressbar"] div {
+    background: linear-gradient(90deg, #c4a484 0%, #d4aa7d 25%, #e8d5b7 50%, #d4aa7d 75%, #c4a484 100%) !important;
+    border-radius: 12px !important;
+    box-shadow: 
+        0 2px 10px rgba(196, 164, 132, 0.4) !important,
+        inset 0 1px 0 rgba(255,255,255,0.3) !important;
+}
+
+/* ===== 分隔线 ===== */
+hr, .stDivider {
+    border-color: rgba(196, 164, 132, 0.2) !important;
+}
+
+/* ===== 表格美化 ===== */
+.stDataFrame {
+    border-radius: 16px !important;
+    overflow: hidden !important;
+}
+
+/* ===== 滑块美化 ===== */
+div.stSlider [data-baseweb="slider"] {
+    background: rgba(196, 164, 132, 0.2) !important;
+    border-radius: 6px !important;
+}
+
+div.stSlider [data-baseweb="slider"] > div {
+    background: linear-gradient(90deg, #c4a484 0%, #d4aa7d 100%) !important;
+    border-radius: 6px !important;
+}
+
+/* ===== 折叠面板 ===== */
+.streamlit-expanderHeader {
+    background: linear-gradient(135deg, rgba(255,255,255,0.8) 0%, rgba(250,248,245,0.75) 100%) !important;
+    border-radius: 16px !important;
+    border: 1px solid rgba(196, 164, 132, 0.2) !important;
+}
+
+/* ===== 徽章美化 ===== */
+span[data-testid="stBadge"] {
+    border-radius: 12px !important;
+    padding: 6px 14px !important;
+}
+
+/* ===== 滚动条美化 ===== */
+::-webkit-scrollbar {
+    width: 8px !important;
+    border-radius: 4px !important;
+}
+
+::-webkit-scrollbar-track {
+    background: rgba(196, 164, 132, 0.1) !important;
+    border-radius: 4px !important;
+}
+
+::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #c4a484 0%, #d4aa7d 100%) !important;
+    border-radius: 4px !important;
+}
+
+/* ===== 文字选择 ===== */
+::selection {
+    background: rgba(196, 164, 132, 0.3) !important;
+    color: #1a1a2e !important;
+}
+
+/* ===== 载入动画 ===== */
+.stLoadingSpinner {
+    color: #c4a484 !important;
+}
+
+/* ===== 分步骤淡入动画 ===== */
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(18px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+.main .block-container {
+    animation: fadeInUp 0.55s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+/* ===== 成功/信息/警告/错误消息 ===== */
+.stSuccess {
+    background: linear-gradient(135deg, rgba(212, 170, 125, 0.15) 0%, rgba(196, 164, 132, 0.1) 100%) !important;
+    border-left: 4px solid #c4a484 !important;
+}
+
+.stInfo {
+    background: linear-gradient(135deg, rgba(196, 164, 132, 0.1) 0%, rgba(196, 164, 132, 0.05) 100%) !important;
+    border-left: 4px solid #c4a484 !important;
+}
+
+.stWarning {
+    background: linear-gradient(135deg, rgba(240, 200, 150, 0.15) 0%, rgba(230, 180, 130, 0.1) 100%) !important;
+    border-left: 4px solid #e8c48a !important;
+}
+
+.stError {
+    background: linear-gradient(135deg, rgba(220, 160, 150, 0.15) 0%, rgba(200, 140, 130, 0.1) 100%) !important;
+    border-left: 4px solid #d4a494 !important;
 }
 </style>
+
+<!-- Google Fonts: 高级字体 -->
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;500;600;700&display=swap" rel="stylesheet">
 """, unsafe_allow_html=True)
 
 # ==========================================
@@ -984,7 +1109,15 @@ def get_chinese_zodiac(year):
 # ==========================================
 # 分页控制逻辑 (Step-by-Step)
 # ==========================================
-st.title("🧪 Aroma's Secret Lab")
+st.markdown("""
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<div style="text-align: center; padding: 2.8rem 1rem 1.2rem 1rem;">
+    <p style="font-family: 'Noto Serif TC', serif; font-size: 0.65rem; letter-spacing: 8px; color: #c4a484; text-transform: uppercase; margin: 0 0 0.8rem 0; opacity: 0.9;">香 香 花 園 &nbsp;·&nbsp; 香 的 秘 密</p>
+    <h1 style="font-family: 'Playfair Display', serif; font-size: 2.6rem; font-weight: 700; color: #1a1a2e; margin: 0; line-height: 1.15; letter-spacing: 1px;">Aroma's Secret Lab</h1>
+    <div style="width: 90px; height: 1px; background: linear-gradient(90deg, transparent, #c4a484, transparent); margin: 1.1rem auto;"></div>
+    <p style="font-family: 'Noto Serif TC', serif; font-size: 0.75rem; letter-spacing: 4px; color: #9a8a7a; margin: 0;">專屬香氛 · 命理調配 · 感性科學</p>
+</div>
+""", unsafe_allow_html=True)
 
 if "step" not in st.session_state:
     st.session_state.step = 1
@@ -1096,9 +1229,38 @@ elif st.session_state.step == 2:
         mbti_result = st.session_state.mbti_choice
         personality = mbti_personality.get(mbti_result, "独特个性")
 
-        st.markdown("### 🎉 测试完成！")
-        st.success(f"**您的 MBTI 人格类型是：{mbti_result}**")
-        st.info(f"💡 **个性特质**：{personality}")
+        # MBTI 香氣類型對應
+        _mbti_scent_type = {
+            "INTJ": ("深邃木質系", "神秘沉穩，帶著知性的曠野氣息"),
+            "INTP": ("深邃木質系", "獨立清醒，如古木靜默中的智慧"),
+            "ENTJ": ("深邃木質系", "強勢自信，如大地與雪松的霸氣"),
+            "ENTP": ("清新柑橘系", "思維跳躍，如柑橘迸發的靈動火花"),
+            "INFJ": ("清雅花香系", "洞察深邃，如夜間綻放的白色花朵"),
+            "INFP": ("清雅花香系", "浪漫詩意，如雨後庭院的輕柔花香"),
+            "ENFJ": ("清雅花香系", "溫暖感染力，如牡丹盛開的華麗芬芳"),
+            "ENFP": ("清新柑橘系", "充滿熱情，如陽光下的橙花與檸檬"),
+            "ISTJ": ("溫暖東方系", "踏實可靠，如沉香與檀木的經典底蘊"),
+            "ISFJ": ("溫暖東方系", "溫柔守護，如茉莉與玫瑰的療愈暖香"),
+            "ESTJ": ("溫暖東方系", "穩重果斷，如東方香料的厚重存在感"),
+            "ESFJ": ("溫暖東方系", "親切溫馨，如家中常燃的溫柔香氛"),
+            "ISTP": ("清新柑橘系", "沉著冷靜，如薄荷與木質的乾淨俐落"),
+            "ISFP": ("清雅花香系", "感性藝術，如野花與青草的自然之美"),
+            "ESTP": ("清新柑橘系", "活力奔放，如海風帶來的清爽柑橘"),
+            "ESFP": ("清新柑橘系", "開朗活潑，如熱帶水果的甜美歡快"),
+        }
+        _mbti_key = mbti_result.split(" ")[0]
+        _scent_type, _scent_desc = _mbti_scent_type.get(_mbti_key, ("獨特混調系", "你的靈魂香氣超越分類，獨一無二"))
+
+        st.markdown("### ✨ 測試完成！")
+        st.success(f"**您的 MBTI 人格類型是：{mbti_result}**")
+        st.info(f"💡 **個性特質**：{personality}")
+        st.markdown(f"""
+<div style="background: linear-gradient(135deg, rgba(196,164,132,0.15), rgba(212,170,125,0.1)); border: 1px solid rgba(196,164,132,0.35); border-radius: 18px; padding: 1.2rem 1.5rem; margin: 0.8rem 0; text-align: center;">
+    <p style="font-size: 0.72rem; letter-spacing: 5px; color: #c4a484; margin: 0 0 0.4rem 0; font-family:'Noto Serif TC',serif;">你的靈魂香氣屬於</p>
+    <p style="font-size: 1.4rem; font-weight: 700; color: #1a1a2e; margin: 0 0 0.5rem 0; font-family:'Playfair Display','Noto Serif TC',serif;">🌿 {_scent_type}</p>
+    <p style="font-size: 0.82rem; color: #7a6a5a; margin: 0; line-height: 1.6;">{_scent_desc}</p>
+</div>
+""", unsafe_allow_html=True)
 
         st.markdown("---")
         if st.button("继续下一步 ➔", use_container_width=True):
@@ -1142,6 +1304,17 @@ elif st.session_state.step == 3:
     # 初始化场景答案
     if "scene_answers" not in st.session_state:
         st.session_state.scene_answers = [None] * 5
+
+    # ── 開發者快速測試按鈕（DEV_MODE = False 即隱藏）──
+    if DEV_MODE:
+        if st.button("⚡ [DEV] 快速測試 - 全選第一個選項", type="secondary"):
+            st.session_state.scene_answers = [q["options"][0]["text"] for q in scene_questions]
+            st.session_state.season_choice = list(season_scents.keys())[0]
+            for i, q in enumerate(scene_questions):
+                st.session_state[f"scene_q_{i}"] = q["options"][0]["text"]
+            st.session_state["season_select"] = list(season_scents.keys())[0]
+            st.rerun()
+    # ──────────────────────────────────────────────────
 
     # 场景题目
     st.markdown("### 🖼️ 场景联想测试")
@@ -1194,7 +1367,45 @@ elif st.session_state.step == 4:
     st.subheader("Step 4: 📐 气味场景建模")
     st.info("选择使用的场合与您偏好的香气结构。")
     st.session_state.occasion = st.selectbox("🏙️ 预计使用场合", list(perfume_logic.keys()), key="step4_occ")
-    st.session_state.selected_model = st.selectbox("📐 香气结构模型", list(model_logic.keys()), key="step4_model")
+
+    # 說明香氣結構模型是什麼
+    st.markdown("""
+<div style="background: linear-gradient(135deg, rgba(255,255,255,0.85), rgba(250,248,245,0.8)); border: 1px solid rgba(196,164,132,0.25); border-radius: 20px; padding: 1.4rem 1.6rem; margin: 1rem 0 0.5rem 0;">
+    <p style="font-family: 'Noto Serif TC', serif; font-size: 0.95rem; font-weight: 600; color: #1a1a2e; margin: 0 0 0.8rem 0; letter-spacing: 1px;">💡 什麼是香氣結構模型？</p>
+    <p style="font-size: 0.82rem; color: #6a5a4a; margin: 0 0 0.8rem 0; line-height: 1.7;">每支香水由三層香調組成，就像一場表演的序曲、主題與尾聲。選擇不同比例，會讓整體香氛給人截然不同的感受：</p>
+    <div style="display: flex; gap: 0.6rem; flex-wrap: wrap;">
+        <div style="flex: 1; min-width: 120px; background: linear-gradient(135deg, rgba(255,220,180,0.4), rgba(255,200,150,0.3)); border-radius: 12px; padding: 0.7rem 0.9rem; border: 1px solid rgba(255,180,100,0.3);">
+            <p style="margin: 0 0 0.3rem 0; font-size: 0.78rem; font-weight: 700; color: #c4784a; letter-spacing: 1px;">🌸 前調</p>
+            <p style="margin: 0; font-size: 0.75rem; color: #7a5a3a; line-height: 1.5;">噴上後最先聞到<br>持續約 15–30 分鐘</p>
+        </div>
+        <div style="flex: 1; min-width: 120px; background: linear-gradient(135deg, rgba(196,164,132,0.25), rgba(180,140,110,0.2)); border-radius: 12px; padding: 0.7rem 0.9rem; border: 1px solid rgba(196,164,132,0.3);">
+            <p style="margin: 0 0 0.3rem 0; font-size: 0.78rem; font-weight: 700; color: #9a7a5a; letter-spacing: 1px;">🌺 中調</p>
+            <p style="margin: 0; font-size: 0.75rem; color: #7a5a3a; line-height: 1.5;">香水的靈魂核心<br>持續約 2–4 小時</p>
+        </div>
+        <div style="flex: 1; min-width: 120px; background: linear-gradient(135deg, rgba(90,70,50,0.12), rgba(70,50,30,0.08)); border-radius: 12px; padding: 0.7rem 0.9rem; border: 1px solid rgba(90,70,50,0.2);">
+            <p style="margin: 0 0 0.3rem 0; font-size: 0.78rem; font-weight: 700; color: #5a4a3a; letter-spacing: 1px;">🌿 後調</p>
+            <p style="margin: 0; font-size: 0.75rem; color: #7a5a3a; line-height: 1.5;">最深沉的底韻餘香<br>可留香 6–8 小時</p>
+        </div>
+    </div>
+</div>
+""", unsafe_allow_html=True)
+
+    st.session_state.selected_model = st.selectbox("📐 選擇您的香氣結構模型", list(model_logic.keys()), key="step4_model")
+
+    # 視覺化顯示目前選擇的比例
+    _m = model_logic[st.session_state.selected_model]
+    _r = _m["ratios"]
+    _top, _mid, _base = int(_r[0]*100), int(_r[1]*100), int(_r[2]*100)
+    st.markdown(f"""
+<div style="margin: 0.3rem 0 1rem 0;">
+    <div style="display: flex; border-radius: 14px; overflow: hidden; height: 44px; box-shadow: 0 4px 16px rgba(0,0,0,0.08);">
+        <div style="width:{_top}%; background: linear-gradient(135deg, #ffb877, #ffd4a8); display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; color:#7a4a1a;">前調 {_top}%</div>
+        <div style="width:{_mid}%; background: linear-gradient(135deg, #c4a484, #b8956e); display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; color:#fff;">中調 {_mid}%</div>
+        <div style="width:{_base}%; background: linear-gradient(135deg, #7a6a5a, #5a4a3a); display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; color:#e8d5b7;">後調 {_base}%</div>
+    </div>
+    <p style="text-align:center; font-size:0.8rem; color:#9a8a7a; margin: 0.6rem 0 0 0; font-family:'Noto Serif TC', serif;">{_m["desc"]}</p>
+</div>
+""", unsafe_allow_html=True)
 
     col1, col2 = st.columns(2)
     with col1:
@@ -1355,6 +1566,68 @@ elif st.session_state.step == 5:
     all_scent_codes = final_top + final_mid + final_base
     pre_generated_reasons = generate_all_reasons(all_scent_codes, personality_info)
 
+    # ── 驚艷揭幕動畫 ──
+    st.markdown("""
+<style>
+@keyframes crownSpin {
+    0%   { transform: rotate(-180deg) scale(0); opacity: 0; }
+    60%  { transform: rotate(10deg) scale(1.12); opacity: 1; }
+    80%  { transform: rotate(-4deg) scale(0.96); }
+    100% { transform: rotate(0deg) scale(1); opacity: 1; }
+}
+@keyframes textGoldShimmer {
+    0%   { background-position: -300% center; opacity: 0; }
+    20%  { opacity: 1; }
+    100% { background-position: 300% center; opacity: 1; }
+}
+@keyframes lineExpand {
+    from { width: 0px; opacity: 0; }
+    to   { width: 140px; opacity: 1; }
+}
+@keyframes subFadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+.reveal-crown {
+    display: inline-block;
+    animation: crownSpin 1.4s cubic-bezier(0.34,1.56,0.64,1) forwards;
+}
+.reveal-title {
+    background: linear-gradient(90deg, #8B6914, #D4AF37, #FFF0A0, #D4AF37, #8B6914);
+    background-size: 300% auto;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: textGoldShimmer 3s ease forwards, textGoldShimmer 4s 3s linear infinite;
+    font-family: 'Playfair Display', 'Noto Serif TC', serif;
+    font-size: 1.9rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+    display: block;
+    margin: 0.6rem 0 0 0;
+}
+.reveal-line {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, #D4AF37, transparent);
+    margin: 1rem auto;
+    animation: lineExpand 1.2s 0.6s cubic-bezier(0.25,0.46,0.45,0.94) both;
+}
+.reveal-sub {
+    font-family: 'Noto Serif TC', serif;
+    font-size: 0.75rem;
+    letter-spacing: 4px;
+    color: #9a8a7a;
+    animation: subFadeUp 0.8s 1s ease both;
+}
+</style>
+<div style="text-align:center; padding: 2.5rem 1rem 2rem;">
+    <span class="reveal-crown" style="font-size:2.8rem;">✦</span>
+    <span class="reveal-title">您的專屬香氛已揭曉</span>
+    <div class="reveal-line"></div>
+    <span class="reveal-sub">以下配方，由命理 · 性格 · 感官共同調製</span>
+</div>
+""", unsafe_allow_html=True)
+
     # 渲染主卡片 - 放大标签字体
     st.markdown(f"""
     <div style="background: white; padding: 25px; border-radius: 20px; border: 2px solid #1a1a1a; box-shadow: 8px 8px 0px #F5F5F5; color: #333;">
@@ -1385,9 +1658,9 @@ elif st.session_state.step == 5:
     col1, col2 = st.columns(2)
     with col1:
         st.markdown(f"""
-        <div style="background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%); padding: 20px; border-radius: 15px;">
-            <h4 style="margin:0 0 10px 0; color:#333;">🖼️ 你的香气人格</h4>
-            <p style="font-size:14px; color:#444; line-height:1.7; margin:0;">{tag_descriptions.get(dominant_tag, tag_descriptions["balanced"])}</p>
+        <div style="background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%); padding: 26px 28px; border-radius: 18px;">
+            <h4 style="margin:0 0 12px 0; color:#333;">🖼️ 你的香气人格</h4>
+            <p style="font-size:14px; color:#444; line-height:1.9; margin:0;">{tag_descriptions.get(dominant_tag, tag_descriptions["balanced"])}</p>
         </div>
         """, unsafe_allow_html=True)
 
@@ -1395,10 +1668,10 @@ elif st.session_state.step == 5:
         season_emoji = season_choice.split(" ")[0]
         season_name = season_choice.split(" - ")[0].replace(season_emoji, "").strip()
         st.markdown(f"""
-        <div style="background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%); padding: 20px; border-radius: 15px;">
-            <h4 style="margin:0 0 10px 0; color:#333;">🌿 季节香气偏好</h4>
+        <div style="background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%); padding: 26px 28px; border-radius: 18px;">
+            <h4 style="margin:0 0 12px 0; color:#333;">🌿 季節香氣偏好</h4>
             <p style="font-size:18px; font-weight:bold; color:#8B4513; margin:5px 0;">{season_emoji} {season_name}</p>
-            <p style="font-size:12px; color:#666; margin:0;">{season_data["desc"]}</p>
+            <p style="font-size:13px; color:#666; margin:8px 0 0 0; line-height:1.7;">{season_data["desc"]}</p>
         </div>
         """, unsafe_allow_html=True)
 
@@ -1421,15 +1694,13 @@ elif st.session_state.step == 5:
 
     analysis_note = "（含时辰完整分析）" if know_hour else "（简易分析，不含时辰）"
 
-    st.markdown(f"""
-    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 15px; color: white; margin: 15px 0;">
-        <h4 style="margin:0 0 15px 0;">🔮 五行盈缺分析 {analysis_note}</h4>
-        <p style="margin:5px 0;"><b>⚠️ 缺少五行：</b>{missing_text}</p>
-        <p style="margin:5px 0;"><b>📉 偏弱五行：</b>{weak_text}</p>
-        <p style="margin:5px 0;"><b>📈 较旺五行：</b>{strong_text}</p>
-        <p style="margin:5px 0;"><b>🎯 日主五行：</b>{five_elements["day_master"]}</p>
-    </div>
-    """, unsafe_allow_html=True)
+    st.markdown(f"""<div style="background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);padding:32px 36px;border-radius:20px;color:white;margin:16px 0;line-height:2.0;">
+<h4 style="margin:0 0 20px 0;font-size:1.05rem;letter-spacing:1px;">🔮 五行盈缺分析 {analysis_note}</h4>
+<p style="margin:10px 0;"><b>⚠️ 缺少五行：</b>{missing_text}</p>
+<p style="margin:10px 0;"><b>📉 偏弱五行：</b>{weak_text}</p>
+<p style="margin:10px 0;"><b>📈 較旺五行：</b>{strong_text}</p>
+<p style="margin:10px 0;"><b>🎯 日主五行：</b>{five_elements["day_master"]}</p>
+</div>""", unsafe_allow_html=True)
 
     # 五行补充建议
     if five_elements["missing"] or five_elements["weak"]:
@@ -1478,16 +1749,279 @@ elif st.session_state.step == 5:
         </div>
         """, unsafe_allow_html=True)
 
-    # 配比显示
+    # 配比显示 + B: 結果頁模型切換器
     st.write("---")
-    st.subheader(f"🧪 专业配比建议：{selected_model}")
+    st.markdown("### 🧪 專業配比建議")
+    _new_model = st.radio(
+        "調整香氣結構模型，即時更新配比：",
+        list(model_logic.keys()),
+        index=list(model_logic.keys()).index(selected_model),
+        horizontal=True,
+        key="result_model_switcher"
+    )
+    if _new_model != selected_model:
+        st.session_state.selected_model = _new_model
+        selected_model = _new_model
+        st.rerun()
+    model_data = model_logic[selected_model]
+    _r2 = model_data["ratios"]
+    _t2, _m2, _b2 = int(_r2[0]*100), int(_r2[1]*100), int(_r2[2]*100)
+    st.markdown(f"""
+<div style="margin: 0.5rem 0 1rem 0;">
+    <div style="display: flex; border-radius: 14px; overflow: hidden; height: 40px; box-shadow: 0 4px 16px rgba(0,0,0,0.08);">
+        <div style="width:{_t2}%; background: linear-gradient(135deg, #ffb877, #ffd4a8); display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; color:#7a4a1a;">前調 {_t2}%</div>
+        <div style="width:{_m2}%; background: linear-gradient(135deg, #c4a484, #b8956e); display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; color:#fff;">中調 {_m2}%</div>
+        <div style="width:{_b2}%; background: linear-gradient(135deg, #7a6a5a, #5a4a3a); display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; color:#e8d5b7;">後調 {_b2}%</div>
+    </div>
+    <p style="text-align:center; font-size:0.78rem; color:#9a8a7a; margin:0.5rem 0 0 0;">{model_data["desc"]}</p>
+</div>
+""", unsafe_allow_html=True)
     r, total, df = model_data["ratios"], occ_data["total_oil"], 25
-    c1, c2, c3 = st.columns(3)
-    c1.metric("前调", f"{round(total*r[0],2)}ml", f"{round(total*r[0]*df)}滴")
-    c2.metric("中调", f"{round(total*r[1],2)}ml", f"{round(total*r[1]*df)}滴")
-    c3.metric("后调", f"{round(total*r[2],2)}ml", f"{round(total*r[2]*df)}滴")
+    _t_ml  = round(total * r[0], 2);  _t_dr  = round(total * r[0] * df)
+    _m_ml  = round(total * r[1], 2);  _m_dr  = round(total * r[1] * df)
+    _b_ml  = round(total * r[2], 2);  _b_dr  = round(total * r[2] * df)
+    st.markdown(f"""<div style="display:flex;gap:12px;margin:1.2rem 0;">
+<div style="flex:1;text-align:center;background:linear-gradient(135deg,rgba(255,220,170,0.25),rgba(255,200,140,0.15));border:1px solid rgba(255,170,90,0.25);border-radius:18px;padding:1.4rem 0.5rem;">
+  <p style="font-size:0.68rem;font-weight:700;color:#c4784a;letter-spacing:2px;margin:0 0 0.5rem;">🌸 前調</p>
+  <p style="font-size:1.6rem;font-weight:700;color:#1a1a2e;margin:0;line-height:1.1;">{_t_ml}<span style="font-size:0.75rem;margin-left:3px;">ml</span></p>
+  <p style="font-size:0.75rem;color:#9a8a7a;margin:0.35rem 0 0;">{_t_dr} 滴</p>
+</div>
+<div style="flex:1;text-align:center;background:linear-gradient(135deg,rgba(196,164,132,0.18),rgba(180,140,100,0.12));border:1px solid rgba(196,164,132,0.28);border-radius:18px;padding:1.4rem 0.5rem;">
+  <p style="font-size:0.68rem;font-weight:700;color:#9a7a5a;letter-spacing:2px;margin:0 0 0.5rem;">🌺 中調</p>
+  <p style="font-size:1.6rem;font-weight:700;color:#1a1a2e;margin:0;line-height:1.1;">{_m_ml}<span style="font-size:0.75rem;margin-left:3px;">ml</span></p>
+  <p style="font-size:0.75rem;color:#9a8a7a;margin:0.35rem 0 0;">{_m_dr} 滴</p>
+</div>
+<div style="flex:1;text-align:center;background:linear-gradient(135deg,rgba(90,65,45,0.1),rgba(70,50,30,0.06));border:1px solid rgba(90,65,45,0.18);border-radius:18px;padding:1.4rem 0.5rem;">
+  <p style="font-size:0.68rem;font-weight:700;color:#5a4a3a;letter-spacing:2px;margin:0 0 0.5rem;">🌿 後調</p>
+  <p style="font-size:1.6rem;font-weight:700;color:#1a1a2e;margin:0;line-height:1.1;">{_b_ml}<span style="font-size:0.75rem;margin-left:3px;">ml</span></p>
+  <p style="font-size:0.75rem;color:#9a8a7a;margin:0.35rem 0 0;">{_b_dr} 滴</p>
+</div>
+</div>""", unsafe_allow_html=True)
 
-    st.balloons()
+    # ── 一次性爆炸動畫（只在結果第一次出現時播放）──
+    if "result_burst_done" not in st.session_state:
+        st.session_state.result_burst_done = True
+        _burst_html = """<!DOCTYPE html><html><head><meta charset="UTF-8">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:linear-gradient(135deg,#faf8ff 0%,#f5f0e8 100%);overflow:hidden;height:260px;display:flex;align-items:center;justify-content:center;font-family:serif;}
+#wrap{position:relative;width:1px;height:1px;}
+.p{position:absolute;top:0;left:0;pointer-events:none;display:flex;align-items:center;justify-content:center;}
+.tagline{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:1.05rem;color:#c4a484;letter-spacing:5px;white-space:nowrap;opacity:0;animation:tFade 2.2s 1.2s ease forwards;}
+@keyframes tFade{0%{opacity:0;transform:translate(-50%,-55%);}60%{opacity:1;}100%{opacity:0.85;transform:translate(-50%,-50%);}}
+</style></head><body>
+<div id="wrap"><div class="tagline">✦ 您的配方已揭曉 ✦</div></div>
+<script>
+const syms=["✦","✧","✿","❋","❀","✾","✱","◈","⊹","✲","❃","❊","·","⁕"];
+const cols=["#D4AF37","#C4A484","#E8D5A0","#FFE082","#F5CBA7","#FAD7A0","#FDEBD0","#FFF0A0","#E8C4A0","#f5d5b0"];
+const wrap=document.getElementById("wrap");
+const N=42;
+for(let i=0;i<N;i++){
+  const ang=(i/N)*2*Math.PI;
+  const dist=70+Math.random()*140;
+  const tx=Math.cos(ang)*dist, ty=Math.sin(ang)*dist;
+  const rot=Math.random()*720-360;
+  const sz=0.7+Math.random()*1.4;
+  const dur=1.6+Math.random()*1.6;
+  const dl=Math.random()*0.5;
+  const col=cols[i%cols.length];
+  const sym=syms[i%syms.length];
+  const el=document.createElement("span");
+  el.className="p";
+  el.textContent=sym;
+  el.style.cssText="color:"+col+";font-size:"+sz+"rem;animation:b"+i+" "+dur+"s "+dl+"s ease-out forwards;";
+  const st=document.createElement("style");
+  st.textContent="@keyframes b"+i+"{0%{transform:translate(-50%,-50%) scale(0) rotate(0deg);opacity:1;}15%{opacity:1;}100%{transform:translate(calc(-50% + "+tx+"px),calc(-50% + "+ty+"px)) scale(1.1) rotate("+rot+"deg);opacity:0;}}";
+  document.head.appendChild(st);
+  wrap.appendChild(el);
+}
+</script></body></html>"""
+        components.html(_burst_html, height=260)
+    # ── 選香互動：客人從推薦中各選一款 ─────────────
+    st.write("---")
+    st.markdown("""
+<div style="text-align:center; padding:0.5rem 0 1.2rem;">
+    <p style="font-size:0.68rem; letter-spacing:6px; color:#c4a484; margin:0 0 0.3rem 0;">PERSONALIZE YOUR FORMULA</p>
+    <p style="font-family:'Playfair Display','Noto Serif TC',serif; font-size:1.3rem; font-weight:700; color:#1a1a2e; margin:0;">打造你的專屬配方</p>
+    <p style="font-size:0.8rem; color:#9a8a7a; margin:0.5rem 0 0 0;">從以下推薦中，每個調性各挑一款，完成你的配方</p>
+</div>
+""", unsafe_allow_html=True)
+
+    # ── 初始化選香索引 ──
+    for _sk in ["sel_top", "sel_mid", "sel_base"]:
+        if _sk not in st.session_state:
+            st.session_state[_sk] = 0
+
+    def _card_sel(codes, state_key, label_color, accent_bg):
+        cols = st.columns(len(codes))
+        cur = st.session_state.get(state_key, 0)
+        for i, code in enumerate(codes):
+            full = scent_map.get(code, code)
+            nm = full.split(" (")[0] if " (" in full else full
+            ig = full.split("(")[1].rstrip(")") if "(" in full else ""
+            dc = scent_descriptions.get(code, "")
+            dc_s = dc[:55] + "…" if len(dc) > 55 else dc
+            is_sel = (i == cur)
+            with cols[i]:
+                if is_sel:
+                    st.markdown(f"""
+<div style="border:2px solid {label_color};background:{accent_bg};border-radius:18px;padding:1.15rem 0.9rem 0.8rem;text-align:center;box-shadow:0 10px 28px rgba(196,164,132,0.3);transform:translateY(-6px);min-height:175px;">
+    <div style="font-size:1.05rem;color:{label_color};margin-bottom:0.35rem;font-weight:700;">✦</div>
+    <div style="font-weight:700;color:#1a1a2e;font-size:0.9rem;line-height:1.3;margin-bottom:0.3rem;">{nm}</div>
+    <div style="font-size:0.63rem;color:#9a8a7a;margin-bottom:0.45rem;">{ig}</div>
+    <div style="font-size:0.69rem;color:#6a5a4a;font-style:italic;line-height:1.65;">{dc_s}</div>
+</div>""", unsafe_allow_html=True)
+                    st.button("✦ 已選", key=f"{state_key}_{i}", use_container_width=True, type="primary")
+                else:
+                    st.markdown(f"""
+<div style="border:1px solid rgba(196,164,132,0.2);background:rgba(255,255,255,0.78);border-radius:18px;padding:1.15rem 0.9rem 0.8rem;text-align:center;box-shadow:0 3px 14px rgba(0,0,0,0.05);min-height:175px;">
+    <div style="font-size:1.05rem;color:transparent;margin-bottom:0.35rem;">·</div>
+    <div style="font-weight:700;color:#1a1a2e;font-size:0.9rem;line-height:1.3;margin-bottom:0.3rem;">{nm}</div>
+    <div style="font-size:0.63rem;color:#9a8a7a;margin-bottom:0.45rem;">{ig}</div>
+    <div style="font-size:0.69rem;color:#6a5a4a;font-style:italic;line-height:1.65;">{dc_s}</div>
+</div>""", unsafe_allow_html=True)
+                    if st.button("選擇", key=f"{state_key}_{i}", use_container_width=True):
+                        st.session_state[state_key] = i
+                        st.rerun()
+
+    st.markdown('<p style="font-size:0.75rem;font-weight:700;color:#c4784a;letter-spacing:2px;margin:0 0 0.5rem;">🌸 前調　點選你喜歡的</p>', unsafe_allow_html=True)
+    _card_sel(final_top, "sel_top", "#c4784a", "rgba(255,210,160,0.25)")
+    st.write("")
+    st.markdown('<p style="font-size:0.75rem;font-weight:700;color:#9a7a5a;letter-spacing:2px;margin:0 0 0.5rem;">🌺 中調　點選你喜歡的</p>', unsafe_allow_html=True)
+    _card_sel(final_mid, "sel_mid", "#9a7a5a", "rgba(196,164,132,0.15)")
+    st.write("")
+    st.markdown('<p style="font-size:0.75rem;font-weight:700;color:#5a4a3a;letter-spacing:2px;margin:0 0 0.5rem;">🌿 後調　點選你喜歡的</p>', unsafe_allow_html=True)
+    _card_sel(final_base, "sel_base", "#5a4a3a", "rgba(90,65,45,0.09)")
+
+    _chosen_top  = final_top [st.session_state.get("sel_top",  0)]
+    _chosen_mid  = final_mid [st.session_state.get("sel_mid",  0)]
+    _chosen_base = final_base[st.session_state.get("sel_base", 0)]
+
+    _cn_top  = scent_map.get(_chosen_top,  _chosen_top ).split(" (")[0]
+    _cn_mid  = scent_map.get(_chosen_mid,  _chosen_mid ).split(" (")[0]
+    _cn_base = scent_map.get(_chosen_base, _chosen_base).split(" (")[0]
+
+    # ── G + A: 富內容報告卡（含描述）+ 下載圖片 + 列印 ──
+    st.write("---")
+    st.markdown("#### 🪄 你的專屬香氛報告卡")
+
+    # 取得每個選擇香氣的完整資料
+    def _gi(code):
+        full = scent_map.get(code, code)
+        nm   = full.split(" (")[0] if " (" in full else full
+        ig   = full.split("(")[1].rstrip(")") if "(" in full else ""
+        dc   = scent_descriptions.get(code, "這款香氣能優雅平衡你的內在能量。")
+        wy   = pre_generated_reasons.get(code, "")
+        # 簡單 HTML 轉義
+        def esc(s): return s.replace("&","&amp;").replace("<","&lt;").replace(">","&gt;").replace('"',"&quot;")
+        return esc(nm), esc(ig), esc(dc), esc(wy)
+
+    _tnm,_tig,_tdc,_twy = _gi(_chosen_top)
+    _mnm,_mig,_mdc,_mwy = _gi(_chosen_mid)
+    _bnm,_big,_bdc,_bwy = _gi(_chosen_base)
+    _rs  = model_data["ratios"]
+    _r0,_r1,_r2 = int(_rs[0]*100), int(_rs[1]*100), int(_rs[2]*100)
+    _mbti_s = mbti_choice.split(" ")[0]
+
+    def _why_block(w, bg):
+        if not w: return ""
+        return f'<div style="font-size:0.71rem;color:#7a6a5a;line-height:1.65;margin-top:0.55rem;padding:0.55rem 0.75rem;background:{bg};border-radius:9px;">💫 {w}</div>'
+
+    _card_comp = f"""<!DOCTYPE html><html lang="zh"><head><meta charset="UTF-8">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Noto+Serif+TC:wght@400;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+*{{box-sizing:border-box;margin:0;padding:0;}}
+body{{background:#f0ece4;padding:18px;font-family:'Noto Serif TC',serif;}}
+#card{{background:linear-gradient(145deg,#faf7f2,#f5f0e8);border:1px solid rgba(196,164,132,0.45);border-radius:22px;padding:1.8rem 2rem;max-width:520px;margin:0 auto;box-shadow:0 10px 36px rgba(196,164,132,0.22);}}
+.b-top{{text-align:center;font-size:0.58rem;letter-spacing:7px;color:#c4a484;margin-bottom:0.4rem;}}
+.b-title{{text-align:center;font-family:'Playfair Display',serif;font-size:1.45rem;font-weight:700;color:#1a1a2e;}}
+.divider{{width:60px;height:1px;background:linear-gradient(90deg,transparent,#c4a484,transparent);margin:0.75rem auto 1rem;}}
+.info-t{{width:100%;font-size:0.77rem;border-collapse:collapse;margin-bottom:1.1rem;}}
+.info-t td{{padding:3px 0;}}
+.il{{color:#9a8a7a;width:28%;}}
+.iv{{color:#1a1a2e;font-weight:600;}}
+.sec{{font-size:0.65rem;letter-spacing:3px;color:#c4a484;margin:0.5rem 0 0.9rem;}}
+.sb{{margin-bottom:1rem;padding:1rem 1.1rem;border-radius:14px;border:1px solid;}}
+.st{{background:rgba(255,215,170,0.22);border-color:rgba(255,170,90,0.22);}}
+.sm{{background:rgba(196,164,132,0.13);border-color:rgba(196,164,132,0.22);}}
+.sb2{{background:rgba(80,60,40,0.06);border-color:rgba(80,60,40,0.13);}}
+.nl{{font-size:0.68rem;font-weight:700;letter-spacing:1px;margin-bottom:0.3rem;}}
+.sn{{font-size:0.98rem;font-weight:700;color:#1a1a2e;}}
+.si{{font-size:0.7rem;color:#9a8a7a;margin:0.15rem 0 0.45rem;}}
+.sd{{font-size:0.74rem;color:#5a4a3a;line-height:1.75;font-style:italic;}}
+.rbar{{display:flex;border-radius:10px;overflow:hidden;height:26px;margin:1.1rem 0 0.35rem;}}
+.rt{{background:linear-gradient(135deg,#ffb877,#ffd4a8);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#7a4a1a;}}
+.rm{{background:linear-gradient(135deg,#c4a484,#b8956e);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;}}
+.rb{{background:linear-gradient(135deg,#7a6a5a,#5a4a3a);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#e8d5b7;}}
+.mname{{text-align:center;font-size:0.62rem;color:#9a8a7a;margin:0.3rem 0 0;}}
+.footer{{text-align:center;font-size:0.6rem;color:#c4a484;letter-spacing:3px;margin-top:1.2rem;}}
+.btns{{display:flex;gap:10px;max-width:520px;margin:14px auto 0;}}
+.btn{{flex:1;padding:13px 0;border:1px solid rgba(196,164,132,0.5);border-radius:14px;background:linear-gradient(135deg,#faf8ff,#fff);font-family:'Noto Serif TC',serif;font-size:13px;font-weight:600;color:#1a1a2e;cursor:pointer;letter-spacing:1px;transition:all .3s;}}
+.btn:hover{{transform:translateY(-2px);box-shadow:0 6px 20px rgba(196,164,132,0.2);}}
+.btn-gold{{background:linear-gradient(135deg,#c4a484,#b8956e);color:#fff;border:none;}}
+@media print{{.btns{{display:none!important;}}body{{background:white;padding:0;}}#card{{box-shadow:none;border:1px solid #ddd;}}}}
+</style></head><body>
+<div id="card">
+  <p class="b-top">香 香 花 園 · 香 的 秘 密</p>
+  <p class="b-title">Aroma's Secret Lab</p>
+  <div class="divider"></div>
+  <table class="info-t">
+    <tr><td class="il">星座</td><td class="iv">{z_name}</td><td class="il">生肖</td><td class="iv">屬{c_zodiac}</td></tr>
+    <tr><td class="il">MBTI</td><td class="iv">{_mbti_s}</td><td class="il">靈數</td><td class="iv">{l_num} 號</td></tr>
+  </table>
+  <p class="sec">✦ 專屬香氣配方</p>
+  <div class="sb st">
+    <p class="nl" style="color:#c4784a;">🌸 前調</p>
+    <p class="sn">{_tnm}</p>
+    <p class="si">（{_tig}）</p>
+    <p class="sd">{_tdc}</p>
+    {_why_block(_twy,"rgba(255,200,140,0.18)")}
+  </div>
+  <div class="sb sm">
+    <p class="nl" style="color:#9a7a5a;">🌺 中調</p>
+    <p class="sn">{_mnm}</p>
+    <p class="si">（{_mig}）</p>
+    <p class="sd">{_mdc}</p>
+    {_why_block(_mwy,"rgba(196,164,132,0.14)")}
+  </div>
+  <div class="sb sb2">
+    <p class="nl" style="color:#5a4a3a;">🌿 後調</p>
+    <p class="sn">{_bnm}</p>
+    <p class="si">（{_big}）</p>
+    <p class="sd">{_bdc}</p>
+    {_why_block(_bwy,"rgba(90,70,50,0.08)")}
+  </div>
+  <div class="rbar">
+    <div class="rt" style="width:{_r0}%">前 {_r0}%</div>
+    <div class="rm" style="width:{_r1}%">中 {_r1}%</div>
+    <div class="rb" style="width:{_r2}%">後 {_r2}%</div>
+  </div>
+  <p class="mname">｛{selected_model}｝</p>
+  <p class="footer">✦ &nbsp; 每一滴都是你的故事 &nbsp; ✦</p>
+</div>
+<div class="btns">
+  <button class="btn btn-gold" onclick="dlCard()">📥 下載圖片</button>
+  <button class="btn" onclick="window.print()">🖨️ 列印 / 儲存 PDF</button>
+</div>
+<script>
+function dlCard(){{
+  const btns=document.querySelector('.btns');
+  btns.style.display='none';
+  html2canvas(document.getElementById('card'),{{scale:2,backgroundColor:'#f0ece4',useCORS:true,logging:false}}).then(c=>{{
+    btns.style.display='flex';
+    const a=document.createElement('a');
+    a.download='aroma_secret_lab.png';
+    a.href=c.toDataURL('image/png');
+    a.click();
+  }}).catch(()=>{{btns.style.display='flex';}});
+}}
+</script>
+</body></html>"""
+
+    components.html(_card_comp, height=920, scrolling=True)
+    st.caption("💡 點「下載圖片」儲存 PNG · 點「列印」可輸出 PDF 或實體列印")
+    st.write("---")
     if st.button("🔄 重新开始分析"):
         st.session_state.clear()
         st.rerun()
