@@ -23,6 +23,15 @@ body, .stApp {
     background: linear-gradient(135deg, #faf8ff 0%, #f3f0ff 25%, #ede7f6 50%, #f5f0ff 75%, #ffffff 100%) !important;
     background-color: #ffffff !important;
     font-family: 'Noto Serif TC', 'Songti TC', serif !important;
+    color: #1a1a2e !important;
+    color-scheme: light !important;
+}
+
+/* ===== 強制淺色模式文字顏色 ===== */
+p, span, div, label, li, td, th, .stMarkdown, .stText,
+[data-testid="stMarkdownContainer"], [data-testid="stText"],
+.element-container, .stRadio label, .stCheckbox label {
+    color: #1a1a2e !important;
 }
 
 /* ===== 高级标题 ===== */
